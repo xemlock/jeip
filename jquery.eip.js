@@ -272,9 +272,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $self.fadeIn( "fast" );
             } );
 
-            $self.bind( opt.edit_event, function() {
-                _attach( self );
-            } );
+            _attach( self );
         };
 
         var _saveEdit = function( self, orig_option_value ) {
@@ -390,7 +388,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     } );
 
                     _attach( self );
-
                 } );
             }
 

@@ -91,6 +91,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             on_error            : function( msg, response ) {
                 alert( 'Error: ' + msg );
             },
+            on_render           : null,
             prepare_data        : null,
             template            : function( template, values ) {
                 var replace = function( str, match ) {
@@ -212,7 +213,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 form += opt.template( opt.stop_form, { } );
 
-                $self.after( form );
+                var $form = $( form );
+
+                $self.after( $form );
+
                 $( "#jeip-editor-" + self.id ).fadeIn( "fast" );
 
                 if( opt.focus_edit ) {
@@ -242,6 +246,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $( "#jeip-save-" + self.id ).bind( "click", function() {
                     return _saveEdit( self, orig_option_value );
                 } ); // save click
+
+                if( typeof opt.on_render === "function" ) {
+                    $form.each( function() {
+                        opt.on_render.call( this );
+                    } );
+                }
+
             } ); // this fadeOut
         } // function _editMode
 
@@ -318,7 +329,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 data        : opt.data
             }
 
-            if( opt.form_type == 'select' ) {
+            if( opt.form_type == "select" ) {
                 context_data.orig_option_value = orig_option_value;
                 context_data.orig_option_text = orig_value;
                 context_data.new_option_text = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );

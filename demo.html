@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta charset="UTF-8"/>
 <title>jQuery Edit In Place (JEIP) Demo</title>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
 <script type="text/javascript" src="jquery.eip.js"></script>
@@ -29,7 +29,10 @@
     background-color: #ccc;
     color: #fff;
 }
-
+.jeip-empty {
+    color: #999;
+    font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -38,32 +41,36 @@
 </header>
 
 <div class="entry-content">
-<b>Examples</b><p></p>
-<hr>
-<p><span id="text-edit">Text edit</span></p>
-<p></p>
-<p><span id="textarea-edit">Textarea edit – <b>IÃ±tÃ«rnÃ¢tiÃ´nÃ lizÃ¦tiÃ¸n</b></span></p>
-<p></p>
-<p>Select form, what is your favorite color: <span id="select-edit">Blue</span></p>
-<hr>
-<p>Learn more about <a href="http://josephscott.org/code/javascript/jquery-edit-in-place/">jQuery Edit In Place (JEIP)</a>.</p>
+    <b>Examples</b><p></p>
+    <hr/>
+    <p><span id="text-edit">Text edit</span></p>
+    <p></p>
+    <p><span id="textarea-edit">Textarea edit – <b>IÃ±tÃ«rnÃ¢tiÃ´nÃ lizÃ¦tiÃ¸n</b></span></p>
+    <p></p>
+    <p>Select form, what is your favorite color: <span id="select-edit">Blue</span></p>
+    <p></p>
+    <p><span id="empty-text"></span></p>
+    <hr/>
+    <p>Learn more about <a href="http://josephscott.org/code/javascript/jquery-edit-in-place/">jQuery Edit In Place (JEIP)</a>.</p>
+</div>
 
-<script type="text/javascript">
-	$( "#text-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", { select_text: true } );
-	$( "#textarea-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", { 
-		form_type: "textarea"
-	} );
-	$( "#select-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", {
-		form_type: "select",
-		select_options: {
-			blue	: "Blue",
-			green	: "Green",
-			red		: "Red",
-			black	: "Black",
-			brown	: "Brown",
-			white	: "White"
-		}
-	} );
-</script></p>
-			</div>
+<script type="text/javascript">//<![CDATA[
+$( "#text-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", { select_text: true } );
+$( "#textarea-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", { 
+        form_type: "textarea"
+} );
+$( "#select-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", {
+        form_type: "select",
+        select_options: {
+                blue	: "Blue",
+                green	: "Green",
+                red		: "Red",
+                black	: "Black",
+                brown	: "Brown",
+                white	: "White"
+        }
+} );
+$("#empty-text").eip("response.js");
+// ]]>
+</script>
 </body></html>

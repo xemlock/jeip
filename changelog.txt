@@ -3,7 +3,7 @@ Change Log
 
 0.2.0 - 16 Dec 2012
 	- new settings: method, hint_text, or_text, prepare_data, template,
-	  on_render
+	  on_render, empty_text, empty_class
 	- fixed asynchronicity issues with remove() after fadeOut()
 	- elements ids prefixed with jeip-
 	- optimizations: decreased number of calls to jQuery on the same
@@ -11,3 +11,4 @@ Change Log
 	- id attributes of form elements generated outside of templates
 	- customizable ajax data, by default containing only the input value
 	- mouseover_class is optional, disabled by default
+	- support for empty strings

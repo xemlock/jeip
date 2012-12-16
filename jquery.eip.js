@@ -66,6 +66,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             hint_text           : "Click to edit",
             or_text             : "OR",
+            empty_text          : "(Click to edit)",
+            empty_class         : "jeip-empty",
 
             saving_text         : "Saving ...",
             saving_class        : "jeip-saving",
@@ -116,6 +118,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
 
             $this.attr( 'title', opt.hint_text );
+
+            if( !$.trim( $this.html() ).length ) {
+                $this.addClass( opt.empty_class );
+                $this.html( opt.empty_text );
+            }
+
             $this.bind( opt.edit_event, function() {
                 _editMode( this );
             } )
@@ -130,7 +138,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $self.removeClass( opt.mouseover_class );
             $self.fadeOut( "fast", function() {
                 var id      = self.id;
-                var value   = $( self ).html( );
+                var value   = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
 
                 var safe_value  = value.replace( /</g, "&lt;" );
                 safe_value      = value.replace( />/g, "&gt;" );
@@ -349,8 +357,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 if( data.error ) {
                     opt.on_error( data.error, data, textStatus, jqXHR );
                 }
-                else if( data.html ) {
-                    $self.html( data.html );
+                else {
+                    var html;
+
+                    if( typeof data.html !== "undefined" ) {
+                        html = data.html;
+                    }
+                    else if(opt.form_type == "select" ) {
+                        html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                    }
+                    else {
+                        html = new_value;
+                    }
+
+                    html = $.trim( html );
+                    if( html.length ) {
+                        $self.removeClass( opt.empty_class );
+                    }
+                    else {
+                        $self.addClass( opt.empty_class );
+                        html = opt.empty_text;
+                    }
+                    $self.html( html );
                 }
 
                 $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {

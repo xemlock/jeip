@@ -108,28 +108,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $.extend( opt, options );
         }
 
-        this.each( function( ) {
-            var $this = $( this );
-
-            if (opt.mouseover_class) {
-                $this.bind( "mouseenter mouseleave", function() {
-                    $( this ).toggleClass( opt.mouseover_class );
-                } );
-            }
-
-            $this.attr( 'title', opt.hint_text );
-
-            if( !$.trim( $this.html() ).length ) {
-                $this.addClass( opt.empty_class );
-                $this.html( opt.empty_text );
-            }
-
-            $this.bind( opt.edit_event, function() {
-                _editMode( this );
-            } )
-        } ); // this.each
-
         // Private functions
+        var _attach = function( self ) {
+            var $self = $( self );
+
+            $self.attr( 'title', opt.hint_text );
+
+            if( !$.trim( $self.html() ).length ) {
+                $self.addClass( opt.empty_class );
+                $self.html( opt.empty_text );
+            }
+
+            $self.bind( opt.edit_event, function() {
+                _editMode( this );
+            });
+        }
+
         var _editMode = function( self ) {
             var $self = $( self );
 
@@ -137,8 +131,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             $self.removeClass( opt.mouseover_class );
             $self.fadeOut( "fast", function() {
-                var id      = self.id;
-                var value   = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
+                var value = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
 
                 var safe_value  = value.replace( /</g, "&lt;" );
                 safe_value      = value.replace( />/g, "&gt;" );
@@ -280,7 +273,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             } );
 
             $self.bind( opt.edit_event, function() {
-                _editMode( self );
+                _attach( self );
             } );
         };
 
@@ -300,9 +293,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $self.fadeIn( "fast" );
                 });
 
-                $self.bind( opt.edit_event, function() {
-                    _editMode( self );
-                } );
+                _attach( self );
 
                 return true;
             }
@@ -352,55 +343,54 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             var handle_response = function( data, textStatus, jqXHR ) {
                 $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
                     $( this ).remove();
-                } );
 
-                if( data.error ) {
-                    opt.on_error( data.error, data, textStatus, jqXHR );
-                }
-                else {
-                    var html;
-
-                    if( typeof data.html !== "undefined" ) {
-                        html = data.html;
-                    }
-                    else if(opt.form_type == "select" ) {
-                        html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                    if( data.error ) {
+                        opt.on_error( data.error, data, textStatus, jqXHR );
                     }
                     else {
-                        html = new_value;
+                        var html;
+
+                        if( typeof data.html !== "undefined" ) {
+                            html = data.html;
+                        }
+                        else if(opt.form_type == "select" ) {
+                            html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                        }
+                        else {
+                            html = new_value;
+                        }
+
+                        html = $.trim( html );
+                        if( html.length ) {
+                            $self.removeClass( opt.empty_class );
+                        }
+                        else {
+                            $self.addClass( opt.empty_class );
+                            html = opt.empty_text;
+                        }
+                        $self.html( html );
                     }
 
-                    html = $.trim( html );
-                    if( html.length ) {
-                        $self.removeClass( opt.empty_class );
-                    }
-                    else {
-                        $self.addClass( opt.empty_class );
-                        html = opt.empty_text;
-                    }
-                    $self.html( html );
-                }
+                    $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
+                        $( this ).remove();
 
-                $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
-                    $( this ).remove();
+                        if( opt.mouseover_class ) {
+                            $self.addClass( opt.mouseover_class );
+                        }
 
-                    if( opt.mouseover_class ) {
-                        $self.addClass( opt.mouseover_class );
-                    }
+                        $self.fadeIn( "fast" );
 
-                    $self.fadeIn( "fast" );
+                        if( !data.error && typeof opt.after_save === "function" ) {
+                            opt.after_save( self );
+                        }
 
-                    if( !data.error && typeof opt.after_save === "function" ) {
-                        opt.after_save( self );
-                    }
+                        if( opt.mouseover_class ) {
+                            $self.removeClass( opt.mouseover_class );
+                        }
+                    } );
 
-                    if( opt.mouseover_class ) {
-                        $self.removeClass( opt.mouseover_class );
-                    }
-                } );
+                    _attach( self );
 
-                $self.bind( opt.edit_event, function() {
-                    _editMode( self );
                 } );
             }
 
@@ -417,6 +407,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             } ); // ajax
         }; // _saveEdit
 
+        this.each( function( ) {
+            var $this = $( this );
+
+            if (opt.mouseover_class) {
+                $this.bind( "mouseenter mouseleave", function() {
+                    $( this ).toggleClass( opt.mouseover_class );
+                } );
+            }
+
+            _attach( this );
+        } ); // this.each
 
     }; // inplaceEdit
 })( jQuery );

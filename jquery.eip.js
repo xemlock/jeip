@@ -64,7 +64,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             editor_class        : "jeip-editor",
             editfield_class     : "jeip-editfield",
 
-            hint_text           : 'Click to edit',
+            hint_text           : "Click to edit",
+            or_text             : "OR",
 
             saving_text         : "Saving ...",
             saving_class        : "jeip-saving",
@@ -72,7 +73,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             saving              : '<span id="#{id}" class="#{saving_class}" style="display:none">#{saving_text}</span>',
 
             start_form          : '<span id="#{id}" class="#{editor_class}" style="display:none">',
-            form_buttons        : '<span><input type="button" id="#{save_id}" class="#{savebutton_class}" value="#{savebutton_text}"/> OR <input type="button" id="#{cancel_id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}"/></span>',
+            form_buttons        : '<span><input type="button" id="#{save_id}" class="#{savebutton_class}" value="#{savebutton_text}"/> #{or_text} <input type="button" id="#{cancel_id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}"/></span>',
             stop_form           : '</span>',
 
             text_form           : '<input type="text" id="#{id}" class="#{editfield_class}" value="#{value}"/> <br/>',
@@ -208,7 +209,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     savebutton_class    : opt.savebutton_class,
                     savebutton_text     : opt.savebutton_text,
                     cancelbutton_class  : opt.cancelbutton_class,
-                    cancelbutton_text   : opt.cancelbutton_text
+                    cancelbutton_text   : opt.cancelbutton_text,
+                    or_text             : opt.or_text
                 } );
 
                 form += opt.template( opt.stop_form, { } );

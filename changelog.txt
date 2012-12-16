@@ -2,7 +2,8 @@ jQuery Edit In Place (JEIP)
 Change Log
 
 0.2.0 - 16 Dec 2012
-	- new settings: method, hint_text, prepare_data, template
+	- new settings: method, hint_text, or_text, prepare_data, template,
+	  on_render
 	- fixed asynchronicity issues with remove() after fadeOut()
 	- elements ids prefixed with jeip-
 	- optimizations: decreased number of calls to jQuery on the same

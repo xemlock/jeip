@@ -1,3 +1,13 @@
+/*!
+ * jQuery Edit In Place plugin
+ *
+ * This version is based on 0.1.2 version of jQuery Edit In Place (JEIP)
+ * from http://josephscott.org/code/javascript/jquery-edit-in-place/
+ *
+ * Version: 0.2.0 (2012-12-16, Xemlock)
+ *
+ * Copyright (c) 2008 Joseph Scott - released under MIT License
+ */
 /*
 Copyright (c) 2008 Joseph Scott, http://josephscott.org/
 
@@ -21,13 +31,14 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// version: 0.1.2
+// version: 0.2.0
 
 (function( $ ) {
     $.fn.eip = function( save_url, options ) {
         // Defaults
         var opt = {
             save_url            : save_url,
+            method              : "POST",
 
             save_on_enter       : true,
             cancel_on_esc       : true,
@@ -49,33 +60,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             cancelbutton_text   : "CANCEL",
             cancelbutton_class  : "jeip-cancelbutton",
 
-            mouseover_class     : "jeip-mouseover",
+            mouseover_class     : false, // no mouseover class
             editor_class        : "jeip-editor",
             editfield_class     : "jeip-editfield",
+
+            hint_text           : 'Click to edit',
 
             saving_text         : "Saving ...",
             saving_class        : "jeip-saving",
 
-            saving              : '<span id="saving-#{id}" class="#{saving_class}" style="display: none;">#{saving_text}</span>',
+            saving              : '<span id="#{id}" class="#{saving_class}" style="display:none">#{saving_text}</span>',
 
-            start_form          : '<span id="editor-#{id}" class="#{editor_class}" style="display: none;">',
-            form_buttons        : '<span><input type="button" id="save-#{id}" class="#{savebutton_class}" value="#{savebutton_text}" /> OR <input type="button" id="cancel-#{id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}" /></span>',
+            start_form          : '<span id="#{id}" class="#{editor_class}" style="display:none">',
+            form_buttons        : '<span><input type="button" id="#{save_id}" class="#{savebutton_class}" value="#{savebutton_text}"/> OR <input type="button" id="#{cancel_id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}"/></span>',
             stop_form           : '</span>',
 
-            text_form           : '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> <br />',
-            textarea_form       : '<textarea cols="#{cols}" rows="#{rows}" id="edit-#{id}" class="#{editfield_class}">#{value}</textarea> <br />',
-            start_select_form   : '<select id="edit-#{id}" class="#{editfield_clas}">',
-            select_option_form  : '<option id="edit-option-#{id}-#{option_value}" value="#{option_value}" #{selected}>#{option_text}</option>',
+            text_form           : '<input type="text" id="#{id}" class="#{editfield_class}" value="#{value}"/> <br/>',
+            textarea_form       : '<textarea cols="#{cols}" rows="#{rows}" id="#{id}" class="#{editfield_class}">#{value}</textarea> <br/>',
+            start_select_form   : '<select id="#{id}" class="#{editfield_class}">',
+            select_option_form  : '<option id="#{id}" value="#{option_value}" #{selected}>#{option_text}</option>',
             stop_select_form    : '</select>',
 
             after_save          : function( self ) {
-                for( var i = 0; i < 2; i++ ) {
-                    $( self ).fadeOut( "fast" );
-                    $( self ).fadeIn( "fast" );
+                var $self = $( self );
+                for( var i = 0; i < 2; ++i ) {
+                    $self.fadeOut( "fast" );
+                    $self.fadeIn( "fast" );
                 }
             },
-            on_error            : function( msg ) {
-                alert( "Error: " + msg );
+            on_error            : function( msg, response ) {
+                alert( 'Error: ' + msg );
+            },
+            prepare_data        : null,
+            template            : function( template, values ) {
+                var replace = function( str, match ) {
+                    return typeof values[match] === "string" || typeof values[match] === "number" ? values[match] : str;
+                };
+                return template.replace( /#\{([^{}]*)}/g, replace );
             }
         }; // defaults
 
@@ -84,23 +105,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         }
 
         this.each( function( ) {
-            var self = this;
+            var $this = $( this );
 
-            $( this ).bind( "mouseenter mouseleave", function( e ) {
-                $( this ).toggleClass( opt.mouseover_class );
-            } );
+            if (opt.mouseover_class) {
+                $this.bind( "mouseenter mouseleave", function() {
+                    $( this ).toggleClass( opt.mouseover_class );
+                } );
+            }
 
-            $( this ).bind( opt.edit_event, function( e ) {
+            $this.attr( 'title', opt.hint_text );
+            $this.bind( opt.edit_event, function() {
                 _editMode( this );
-            } );
+            } )
         } ); // this.each
 
         // Private functions
         var _editMode = function( self ) {
-            $( self ).unbind( opt.edit_event );
+            var $self = $( self );
 
-            $( self ).removeClass( opt.mouseover_class );
-            $( self ).fadeOut( "fast", function( e ) {
+            $self.unbind( opt.edit_event );
+
+            $self.removeClass( opt.mouseover_class );
+            $self.fadeOut( "fast", function() {
                 var id      = self.id;
                 var value   = $( self ).html( );
 
@@ -110,14 +136,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 var orig_option_value = false;
 
-                var form = _template( opt.start_form, {
-                    id              : self.id,
+                var form = opt.template( opt.start_form, {
+                    id              : "jeip-editor-" + self.id,
                     editor_class    : opt.editor_class
                 } );
 
                 if( opt.form_type == 'text' ) {
-                    form += _template( opt.text_form, {
-                        id              : self.id,
+                    form += opt.template( opt.text_form, {
+                        id              : "jeip-edit-" + self.id,
                         editfield_class : opt.editfield_class,
                         value           : value
                     } );
@@ -140,8 +166,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     }
                     rows = parseInt( rows );
 
-                    form += _template( opt.textarea_form, {
-                        id              : self.id,
+                    form += opt.template( opt.textarea_form, {
+                        id              : "jeip-edit-" + self.id,
                         cols            : opt.cols,
                         rows            : rows,
                         editfield_class : opt.editfield_class,
@@ -149,8 +175,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     } );
                 } // textarea form
                 else if( opt.form_type == 'select' ) {
-                    form += _template( opt.start_select_form, {
-                        id              : self.id,
+                    form += opt.template( opt.start_select_form, {
+                        id              : "jeip-edit-" + self.id,
                         editfield_class : opt.editfield_class
                     } );
 
@@ -164,43 +190,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                             orig_option_value = k;
                         }
 
-                        form += _template( opt.select_option_form, {
-                            id          : self.id,
+                        form += opt.template( opt.select_option_form, {
+                            id          : "jeip-edit-option-" + self.id + "-" + k,
                             option_value: k,
                             option_text : v,
                             selected    : selected
                         } );
                     } );
 
-                    form += _template( opt.stop_select_form, { } );
+                    form += opt.template( opt.stop_select_form, { } );
                 } // select form
 
-                form += _template( opt.form_buttons, {
-                    id                  : self.id,
+                form += opt.template( opt.form_buttons, {
+                    save_id             : "jeip-save-" + self.id,
+                    cancel_id           : "jeip-cancel-" + self.id,
                     savebutton_class    : opt.savebutton_class,
                     savebutton_text     : opt.savebutton_text,
                     cancelbutton_class  : opt.cancelbutton_class,
                     cancelbutton_text   : opt.cancelbutton_text
                 } );
 
-                form += _template( opt.stop_form, { } );
+                form += opt.template( opt.stop_form, { } );
 
-                $( self ).after( form );
-                $( "#editor-" + self.id ).fadeIn( "fast" );
+                $self.after( form );
+                $( "#jeip-editor-" + self.id ).fadeIn( "fast" );
 
                 if( opt.focus_edit ) {
-                    $( "#edit-" + self.id ).focus( );
+                    $( "#jeip-edit-" + self.id ).focus( );
                 }
 
                 if( opt.select_text ) {
-                    $( "#edit-" + self.id ).select( );
+                    $( "#jeip-edit-" + self.id ).select( );
                 }
 
-                $( "#cancel-" + self.id ).bind( "click", function( e ) {
+                $( "#jeip-cancel-" + self.id ).bind( "click", function() {
                     _cancelEdit( self );
                 } );
 
-                $( "#edit-" + self.id ).keydown( function( e ) {
+                $( "#jeip-edit-" + self.id ).keydown( function( e ) {
                     // cancel
                     if( e.which == 27 ) {
                         _cancelEdit( self );
@@ -212,109 +239,140 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     }
                 } );
 
-                $( "#save-" + self.id ).bind( "click", function( e ) {
+                $( "#jeip-save-" + self.id ).bind( "click", function() {
                     return _saveEdit( self, orig_option_value );
                 } ); // save click
             } ); // this fadeOut
         } // function _editMode
 
-        var _template = function( template, values ) {
-            var replace = function( str, match ) {
-                return typeof values[match] === "string" || typeof values[match] === 'number' ? values[match] : str;
-            };
-            return template.replace( /#\{([^{}]*)}/g, replace );
-        };
-
-        var _trim = function( str ) {
-            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        }
-
         var _cancelEdit = function( self ) {
-            $( "#editor-" + self.id ).fadeOut( "fast" );
-            $( "#editor-" + self.id ).remove( );
+            var $self = $( self );
 
-            $( self ).bind( opt.edit_event, function( e ) {
-                _editMode( self );
+            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+                $( this ).remove();
+
+                if( opt.mouseover_class ) {
+                    $self.removeClass( opt.mouseover_class );
+                }
+
+                $self.fadeIn( "fast" );
             } );
 
-            $( self ).removeClass( opt.mouseover_class );
-            $( self ).fadeIn( "fast" );
+            $self.bind( opt.edit_event, function() {
+                _editMode( self );
+            } );
         };
 
         var _saveEdit = function( self, orig_option_value ) {
-            var orig_value = $( self ).html( );
-            var new_value = $( "#edit-" + self.id ).attr( "value" );
+            var $self = $( self );
+            var orig_value = $self.html( );
+            var new_value = $( "#jeip-edit-" + self.id ).attr( "value" );
 
             if( orig_value == new_value ) {
-                $( "#editor-" + self.id ).fadeOut( "fast" );
-                $( "#editor-" + self.id ).remove( );
+                $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+                    $( this ).remove();
 
-                $( self ).bind( opt.edit_event, function( e ) {
+                    if( opt.mouseover_class ) {
+                        $self.removeClass( opt.mouseover_class );
+                    }
+
+                    $self.fadeIn( "fast" );
+                });
+
+                $self.bind( opt.edit_event, function() {
                     _editMode( self );
                 } );
-
-                $( self ).removeClass( opt.mouseover_class );
-                $( self ).fadeIn( "fast" );
 
                 return true;
             }
 
-            $( "#editor-" + self.id ).after( _template( opt.saving, {
-                id          : self.id,
+            $( "#jeip-editor-" + self.id ).after( opt.template( opt.saving, {
+                id          : "jeip-saving-" + self.id,
                 saving_class: opt.saving_class,
                 saving_text : opt.saving_text
             } ) );
-            $( "#editor-" + self.id ).fadeOut( "fast", function( ) {
-                $( "#saving-" + self.id).fadeIn( "fast" );
+            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function( ) {
+                $( "#jeip-saving-" + self.id).fadeIn( "fast" );
             } );
 
-            var ajax_data = {
+            var name = 'value';
+
+            $.each( ['name', 'data-name', 'id'], function( k, v ) {
+                v = $.trim( $self.attr( v ) );
+
+                if( v.length ) {
+                    name = v;
+                    return false;
+                }
+            } );
+
+            var ajax_data = {};
+            ajax_data[ name ] = new_value;
+
+            var context_data = {
                 url         : location.href,
                 id          : self.id,
                 form_type   : opt.form_type,
                 orig_value  : orig_value,
-                new_value   : $( "#edit-" + self.id ).attr( "value" ),
+                new_value   : new_value,
                 data        : opt.data
             }
 
             if( opt.form_type == 'select' ) {
-                ajax_data.orig_option_value = orig_option_value;
-                ajax_data.orig_option_text = orig_value;
-                ajax_data.new_option_text = $( "#edit-option-" + self.id + "-" + new_value ).html( );
+                context_data.orig_option_value = orig_option_value;
+                context_data.orig_option_text = orig_value;
+                context_data.new_option_text = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+            }
+
+            if ( typeof opt.prepare_data === "function" ) {
+                $.extend( ajax_data, opt.prepare_data( context_data ));
+            }
+
+            var handle_response = function( data, textStatus, jqXHR ) {
+                $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+                    $( this ).remove();
+                } );
+
+                if( data.error ) {
+                    opt.on_error( data.error, data, textStatus, jqXHR );
+                }
+                else if( data.html ) {
+                    $self.html( data.html );
+                }
+
+                $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
+                    $( this ).remove();
+
+                    if( opt.mouseover_class ) {
+                        $self.addClass( opt.mouseover_class );
+                    }
+
+                    $self.fadeIn( "fast" );
+
+                    if( !data.error && typeof opt.after_save === "function" ) {
+                        opt.after_save( self );
+                    }
+
+                    if( opt.mouseover_class ) {
+                        $self.removeClass( opt.mouseover_class );
+                    }
+                } );
+
+                $self.bind( opt.edit_event, function() {
+                    _editMode( self );
+                } );
             }
 
             $.ajax( {
                 url     : opt.save_url,
-                type    : "POST",
+                type    : opt.request_type,
                 dataType: "json",
                 data    : ajax_data,
-                success : function( data ) {
-                    $( "#editor-" + self.id ).fadeOut( "fast" );
-                    $( "#editor-" + self.id ).remove( );
-
-                    if( data.is_error == true ) {
-                        opt.on_error( data.error_text );
-                    }
-                    else {
-                        $( self ).html( data.html );
-                    }
-
-                    $( "#saving-" + self.id ).fadeOut( "fast" );
-                    $( "#saving-" + self.id ).remove( );
-
-                    $( self ).bind( opt.edit_event, function( e ) {
-                        _editMode( self );
-                    } );
-
-                    $( self ).addClass( opt.mouseover_class );
-                    $( self ).fadeIn( "fast" );
-
-                    if( opt.after_save != false ) {
-                        opt.after_save( self );
-                    }
-
-                    $( self ).removeClass( opt.mouseover_class );
-                } // success
+                success : handle_response,
+                error   : function( jqXHR, textStatus, errorThrown ) {
+                    errorThrown = errorThrown || 'Unknown error';
+                    handle_response( { error : errorThrown }, textStatus, jqXHR );
+                }
             } ); // ajax
         }; // _saveEdit
 

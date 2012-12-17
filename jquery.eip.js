@@ -34,79 +34,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // version: 0.2.0
 
 (function( $ ) {
-    $.fn.eip = function( save_url, options ) {
+    $.fn.eip = function( target, options ) {
         // Defaults
         var opt = {
-            save_url            : save_url,
-            method              : "POST",
-
-            save_on_enter       : true,
-            cancel_on_esc       : true,
-            focus_edit          : true,
-            select_text         : false,
-            edit_event          : "click",
-            select_options      : false,
-            data                : false,
-
-            form_type           : "text", // text, textarea, select
-            size                : false, // calculate at run time
-            max_size            : 60,
-            rows                : false, // calculate at run time
-            max_rows            : 10,
-            cols                : 60,
-
-            savebutton_text     : "SAVE",
-            savebutton_class    : "jeip-savebutton",
-            cancelbutton_text   : "CANCEL",
-            cancelbutton_class  : "jeip-cancelbutton",
-
-            mouseover_class     : false, // no mouseover class
-            editor_class        : "jeip-editor",
-            editfield_class     : "jeip-editfield",
-
-            hint_text           : "Click to edit",
-            or_text             : "OR",
-            empty_text          : "(Click to edit)",
-            empty_class         : "jeip-empty",
-
-            saving_text         : "Saving ...",
-            saving_class        : "jeip-saving",
-
-            saving              : '<span id="#{id}" class="#{saving_class}" style="display:none">#{saving_text}</span>',
-
-            start_form          : '<span id="#{id}" class="#{editor_class}" style="display:none">',
-            form_buttons        : '<span><input type="button" id="#{save_id}" class="#{savebutton_class}" value="#{savebutton_text}"/> #{or_text} <input type="button" id="#{cancel_id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}"/></span>',
-            stop_form           : '</span>',
-
-            text_form           : '<input type="text" id="#{id}" class="#{editfield_class}" value="#{value}"/> <br/>',
-            textarea_form       : '<textarea cols="#{cols}" rows="#{rows}" id="#{id}" class="#{editfield_class}">#{value}</textarea> <br/>',
-            start_select_form   : '<select id="#{id}" class="#{editfield_class}">',
-            select_option_form  : '<option id="#{id}" value="#{option_value}" #{selected}>#{option_text}</option>',
-            stop_select_form    : '</select>',
-
-            after_save          : function( self ) {
-                var $self = $( self );
-                for( var i = 0; i < 2; ++i ) {
-                    $self.fadeOut( "fast" );
-                    $self.fadeIn( "fast" );
-                }
-            },
-            on_error            : function( msg, response ) {
-                alert( 'Error: ' + msg );
-            },
-            on_render           : null,
-            prepare_data        : null,
-            template            : function( template, values ) {
-                var replace = function( str, match ) {
-                    return typeof values[match] === "string" || typeof values[match] === "number" ? values[match] : str;
-                };
-                return template.replace( /#\{([^{}]*)}/g, replace );
-            }
-        }; // defaults
-
-        if( options ) {
-            $.extend( opt, options );
+            target: target
         }
+
+        $.extend( opt, $.fn.eip.defaults, options );
 
         // Private functions
         var _attach = function( self ) {
@@ -219,7 +153,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 form += opt.template( opt.stop_form, { } );
 
-                var $form = $( form );
+                var $form = $( form ).css( 'display', 'none' );
 
                 $self.after( $form );
 
@@ -299,14 +233,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 return true;
             }
 
-            $( "#jeip-editor-" + self.id ).after( opt.template( opt.saving, {
+            var $saving = $(opt.template( opt.saving, {
                 id          : "jeip-saving-" + self.id,
                 saving_class: opt.saving_class,
                 saving_text : opt.saving_text
-            } ) );
-            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function( ) {
-                $( "#jeip-saving-" + self.id).fadeIn( "fast" );
-            } );
+            } ));
+
+            $( "#jeip-editor-" + self.id )
+                .after( $saving.css('display', 'none') )
+                .fadeOut( "fast", function( ) {
+                    $saving.fadeIn( "fast" );
+                } );
 
             var name = 'value';
 
@@ -394,17 +331,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 } );
             }
 
-            $.ajax( {
-                url     : opt.save_url,
-                type    : opt.request_type,
-                dataType: "json",
-                data    : ajax_data,
-                success : handle_response,
-                error   : function( jqXHR, textStatus, errorThrown ) {
-                    errorThrown = errorThrown || 'Unknown error';
-                    handle_response( { error : errorThrown }, textStatus, jqXHR );
-                }
-            } ); // ajax
+            if( $.isFunction( opt.target ) ) {
+                opt.target.call( null, name, new_value, orig_value );
+            }
+            else {
+                $.ajax( {
+                    url     : opt.target,
+                    type    : opt.request_type,
+                    dataType: "json",
+                    data    : ajax_data,
+                    success : handle_response,
+                    error   : function( jqXHR, textStatus, errorThrown ) {
+                        errorThrown = errorThrown || 'Unknown error';
+                        handle_response( { error : errorThrown }, textStatus, jqXHR );
+                    }
+                } ); // ajax
+            }
         }; // _saveEdit
 
         this.each( function( ) {
@@ -420,4 +362,72 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         } ); // this.each
 
     }; // inplaceEdit
+
+    $.fn.eip.defaults = {
+        method              : "POST",
+
+        save_on_enter       : true,
+        cancel_on_esc       : true,
+        focus_edit          : true,
+        select_text         : false,
+        edit_event          : "click",
+        select_options      : false,
+        data                : false,
+
+        form_type           : "text", // text, textarea, select
+        size                : false, // calculate at run time
+        max_size            : 60,
+        rows                : false, // calculate at run time
+        max_rows            : 10,
+        cols                : 60,
+
+        savebutton_text     : "SAVE",
+        savebutton_class    : "jeip-savebutton",
+        cancelbutton_text   : "CANCEL",
+        cancelbutton_class  : "jeip-cancelbutton",
+
+        mouseover_class     : false, // no mouseover class
+        editor_class        : "jeip-editor",
+        editfield_class     : "jeip-editfield",
+
+        hint_text           : "Click to edit",
+        or_text             : "OR",
+        empty_text          : "(Click to edit)",
+        empty_class         : "jeip-empty",
+
+        saving_text         : "Saving ...",
+        saving_class        : "jeip-saving",
+
+        saving              : '<span id="#{id}" class="#{saving_class}">#{saving_text}</span>',
+
+        start_form          : '<span id="#{id}" class="#{editor_class}">',
+        form_buttons        : '<span><input type="button" id="#{save_id}" class="#{savebutton_class}" value="#{savebutton_text}"/> #{or_text} <input type="button" id="#{cancel_id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}"/></span>',
+        stop_form           : '</span>',
+
+        text_form           : '<input type="text" id="#{id}" class="#{editfield_class}" value="#{value}"/> <br/>',
+        textarea_form       : '<textarea cols="#{cols}" rows="#{rows}" id="#{id}" class="#{editfield_class}">#{value}</textarea> <br/>',
+        start_select_form   : '<select id="#{id}" class="#{editfield_class}">',
+        select_option_form  : '<option id="#{id}" value="#{option_value}" #{selected}>#{option_text}</option>',
+        stop_select_form    : '</select>',
+
+        after_save          : function( element ) {
+            var $element = $( element );
+            for( var i = 0; i < 2; ++i ) {
+                $element.fadeOut( "fast" );
+                $element.fadeIn( "fast" );
+            }
+        },
+        on_error            : function( msg, response ) {
+            alert( 'Error: ' + msg );
+        },
+        on_render           : null,
+        prepare_data        : null,
+        template            : function( template, values ) {
+            var replace = function( str, match ) {
+                return typeof values[match] === "string" || typeof values[match] === "number" ? values[match] : str;
+            };
+            return template.replace( /#\{([^{}]*)}/g, replace );
+        }
+    }; // defaults
+
 })( jQuery );

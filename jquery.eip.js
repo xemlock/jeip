@@ -328,7 +328,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             else if( opt.target ) {
                 $.ajax( {
                     url     : opt.target,
-                    type    : opt.request_type,
+                    type    : opt.method,
                     dataType: "json",
                     data    : request_data,
                     success : function( response, textStatus, jqXHR ) {

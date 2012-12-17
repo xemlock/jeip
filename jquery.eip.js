@@ -133,9 +133,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $self.fadeOut( "fast", function() {
                 var value = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
 
-                var safe_value  = value.replace( /</g, "&lt;" );
-                safe_value      = value.replace( />/g, "&gt;" );
-                safe_value      = value.replace( /"/g, "&qout;" );
+                var safe_value = value;
+
+                safe_value = safe_value.replace( /</g, "&lt;" )
+                safe_value = safe_value.replace( />/g, "&gt;" );
+                safe_value = safe_value.replace( /"/g, "&quot;" );
+                safe_value = safe_value.replace( /'/g, "&#39;" );
 
                 var orig_option_value = false;
 
@@ -148,7 +151,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     form += opt.template( opt.text_form, {
                         id              : "jeip-edit-" + self.id,
                         editfield_class : opt.editfield_class,
-                        value           : value
+                        value           : safe_value
                     } );
                 } // text form
                 else if( opt.form_type == 'textarea' ) {
@@ -174,7 +177,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         cols            : opt.cols,
                         rows            : rows,
                         editfield_class : opt.editfield_class,
-                        value           : value
+                        value           : safe_value
                     } );
                 } // textarea form
                 else if( opt.form_type == 'select' ) {

@@ -67,6 +67,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $self.fadeOut( "fast", function() {
                 var value = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
 
+                if( $.isFunction( opt.prepare_value ) ) {
+                    value = opt.prepare_value( value );
+                }
+
                 var safe_value = value;
 
                 safe_value = safe_value.replace( /</g, "&lt;" )
@@ -187,7 +191,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     return _saveEdit( self, orig_option_value );
                 } ); // save click
 
-                if( typeof opt.on_render === "function" ) {
+                if( $.isFunction( opt.on_render ) ) {
                     $form.each( function() {
                         opt.on_render.call( this );
                     } );
@@ -218,22 +222,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             var new_value = $( "#jeip-edit-" + self.id ).attr( "value" );
 
             if( orig_value == new_value ) {
-                $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
-                    $( this ).remove();
-
-                    if( opt.mouseover_class ) {
-                        $self.removeClass( opt.mouseover_class );
-                    }
-
-                    $self.fadeIn( "fast" );
-                });
-
-                _attach( self );
-
+                _cancelEdit( self );
                 return true;
             }
 
-            var $saving = $(opt.template( opt.saving, {
+            var $saving = $( opt.template( opt.saving, {
                 id          : "jeip-saving-" + self.id,
                 saving_class: opt.saving_class,
                 saving_text : opt.saving_text
@@ -245,19 +238,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $saving.fadeIn( "fast" );
                 } );
 
-            var name = 'value';
-
-            $.each( ['name', 'data-name', 'id'], function( k, v ) {
-                v = $.trim( $self.attr( v ) );
-
-                if( v.length ) {
-                    name = v;
-                    return false;
-                }
-            } );
-
             var ajax_data = {};
-            ajax_data[ name ] = new_value;
+            ajax_data[ opt.name ] = new_value;
 
             var context_data = {
                 url         : location.href,
@@ -274,7 +256,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 context_data.new_option_text = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
             }
 
-            if ( typeof opt.prepare_data === "function" ) {
+            if ( $.isFunction( opt.prepare_data ) ) {
                 $.extend( ajax_data, opt.prepare_data( context_data ));
             }
 
@@ -288,24 +270,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     else {
                         var html;
 
-                        if( typeof data.html !== "undefined" ) {
-                            html = data.html;
-                        }
-                        else if(opt.form_type == "select" ) {
+                        if( opt.form_type == "select" ) {
                             html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
                         }
                         else {
                             html = new_value;
                         }
 
-                        html = $.trim( html );
-                        if( html.length ) {
+                        // Modify or escape new value before inserting it into the element.
+                        // Since result of this function may depend on server response it is
+                        // passed as a second parameter.
+                        if( $.isFunction( opt.process_value ) ) {
+                            html = opt.process_value( html, data );
+                        }
+
+                        if( $.trim( html ).length ) {
                             $self.removeClass( opt.empty_class );
                         }
                         else {
                             $self.addClass( opt.empty_class );
                             html = opt.empty_text;
                         }
+
                         $self.html( html );
                     }
 
@@ -364,6 +350,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }; // inplaceEdit
 
     $.fn.eip.defaults = {
+        name                : 'value',
         method              : "POST",
 
         save_on_enter       : true,
@@ -422,6 +409,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         },
         on_render           : null,
         prepare_data        : null,
+        prepare_value       : null,
+        process_value       : null,
         template            : function( template, values ) {
             var replace = function( str, match ) {
                 return typeof values[match] === "string" || typeof values[match] === "number" ? values[match] : str;

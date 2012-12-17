@@ -62,15 +62,22 @@ $( "#textarea-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.p
 $( "#select-edit" ).eip( "http://josephscott.org/wp-content/js-org/jeip/save.php", {
         form_type: "select",
         select_options: {
-                blue	: "Blue",
-                green	: "Green",
-                red		: "Red",
-                black	: "Black",
-                brown	: "Brown",
-                white	: "White"
+                blue    : "Blue",
+                green   : "Green",
+                red     : "Red",
+                black   : "Black",
+                brown   : "Brown",
+                white   : "White"
         }
 } );
-$("#empty-text").eip("response.js");
+$("#empty-text").eip("response.js", {
+    prepare_value: function(value) {
+        return '<' + value + '>';
+    },
+    process_value: function(value, data) {
+        return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+});
 // ]]>
 </script>
 </body></html>

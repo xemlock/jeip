@@ -216,6 +216,67 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _attach( self );
         };
 
+        var _afterSaveEdit = function( self, response, textStatus, jqXHR ) {
+            var $self = $( self );
+            var is_error = opt.is_error( response );
+            var new_value = $( "#jeip-edit-" + self.id ).attr( "value" );
+
+            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+                $( this ).remove();
+
+                if( is_error ) {
+                    opt.on_error( response, textStatus, jqXHR );
+                }
+                else {
+                    var html;
+
+                    if( opt.form_type == "select" ) {
+                        html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                    }
+                    else {
+                        html = new_value;
+                    }
+
+                    // Modify or escape new value before inserting it into the element.
+                    // Since result of this function may depend on server response it is
+                    // passed as a second parameter.
+                    if( $.isFunction( opt.process_value ) ) {
+                        html = opt.process_value( html, response );
+                    }
+
+                    if( $.trim( html ).length ) {
+                        $self.removeClass( opt.empty_class );
+                    }
+                    else {
+                        $self.addClass( opt.empty_class );
+                        html = opt.empty_text;
+                    }
+
+                    $self.html( html );
+                }
+
+                $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
+                    $( this ).remove();
+
+                    if( opt.mouseover_class ) {
+                        $self.addClass( opt.mouseover_class );
+                    }
+
+                    $self.fadeIn( "fast" );
+
+                    if( !is_error && $.isFunction( opt.after_save ) ) {
+                        opt.after_save( self );
+                    }
+
+                    if( opt.mouseover_class ) {
+                        $self.removeClass( opt.mouseover_class );
+                    }
+                } );
+
+                _attach( self );
+            } );
+        }
+
         var _saveEdit = function( self, orig_option_value ) {
             var $self = $( self );
             var orig_value = $self.html( );
@@ -238,8 +299,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $saving.fadeIn( "fast" );
                 } );
 
-            var ajax_data = {};
-            ajax_data[ opt.name ] = new_value;
+            var request_data = {};
+            request_data[ opt.name ] = new_value;
 
             var context_data = {
                 url         : location.href,
@@ -257,81 +318,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
 
             if ( $.isFunction( opt.prepare_data ) ) {
-                $.extend( ajax_data, opt.prepare_data( context_data ));
-            }
-
-            var handle_response = function( data, textStatus, jqXHR ) {
-                $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
-                    $( this ).remove();
-
-                    if( data.error ) {
-                        opt.on_error( data.error, data, textStatus, jqXHR );
-                    }
-                    else {
-                        var html;
-
-                        if( opt.form_type == "select" ) {
-                            html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
-                        }
-                        else {
-                            html = new_value;
-                        }
-
-                        // Modify or escape new value before inserting it into the element.
-                        // Since result of this function may depend on server response it is
-                        // passed as a second parameter.
-                        if( $.isFunction( opt.process_value ) ) {
-                            html = opt.process_value( html, data );
-                        }
-
-                        if( $.trim( html ).length ) {
-                            $self.removeClass( opt.empty_class );
-                        }
-                        else {
-                            $self.addClass( opt.empty_class );
-                            html = opt.empty_text;
-                        }
-
-                        $self.html( html );
-                    }
-
-                    $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
-                        $( this ).remove();
-
-                        if( opt.mouseover_class ) {
-                            $self.addClass( opt.mouseover_class );
-                        }
-
-                        $self.fadeIn( "fast" );
-
-                        if( !data.error && typeof opt.after_save === "function" ) {
-                            opt.after_save( self );
-                        }
-
-                        if( opt.mouseover_class ) {
-                            $self.removeClass( opt.mouseover_class );
-                        }
-                    } );
-
-                    _attach( self );
-                } );
+                $.extend( request_data, opt.prepare_data( context_data ));
             }
 
             if( $.isFunction( opt.target ) ) {
-                opt.target.call( null, name, new_value, orig_value );
+                var response = opt.target.call( null, request_data );
+                _afterSaveEdit( self, response );
             }
-            else {
+            else if( opt.target ) {
                 $.ajax( {
                     url     : opt.target,
                     type    : opt.request_type,
                     dataType: "json",
-                    data    : ajax_data,
-                    success : handle_response,
+                    data    : request_data,
+                    success : function( response, textStatus, jqXHR ) {
+                        _afterSaveEdit( self, response, textStatus, jqXHR );
+                    },
                     error   : function( jqXHR, textStatus, errorThrown ) {
                         errorThrown = errorThrown || 'Unknown error';
-                        handle_response( { error : errorThrown }, textStatus, jqXHR );
+                        _afterSaveEdit( self, { error : errorThrown }, textStatus, jqXHR );
                     }
                 } ); // ajax
+            }
+            else {
+                _afterSaveEdit( self, true );
             }
         }; // _saveEdit
 
@@ -404,8 +414,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $element.fadeIn( "fast" );
             }
         },
-        on_error            : function( msg, response ) {
-            alert( 'Error: ' + msg );
+        on_error            : function( response ) {
+            alert( 'Error: ' + response.error );
+        },
+        is_error            : function( response ) {
+            return !!response.error;
         },
         on_render           : null,
         prepare_data        : null,

@@ -46,7 +46,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         var _id = function( self, key ) {
             var id = 'jeip-' + key + '-' + self.getAttribute( 'data-jeip-id' );
-            console.log(id);
             return id;
         }
 

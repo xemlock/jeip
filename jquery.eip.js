@@ -34,6 +34,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // version: 0.2.0
 
 (function( $ ) {
+    var eip_counter = 0;
+
     $.fn.eip = function( target, options ) {
         // Defaults
         var opt = {
@@ -41,6 +43,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         }
 
         $.extend( opt, $.fn.eip.defaults, options );
+
+        var _id = function( self, key ) {
+            var id = 'jeip-' + key + '-' + self.getAttribute( 'data-jeip-id' );
+            console.log(id);
+            return id;
+        }
 
         // Private functions
         var _attach = function( self ) {
@@ -81,13 +89,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 var orig_option_value = false;
 
                 var form = opt.template( opt.start_form, {
-                    id              : "jeip-editor-" + self.id,
+                    id              : _id( self, 'editor' ),
                     editor_class    : opt.editor_class
                 } );
 
                 if( opt.form_type == 'text' ) {
                     form += opt.template( opt.text_form, {
-                        id              : "jeip-edit-" + self.id,
+                        id              : _id( self, 'edit' ),
                         editfield_class : opt.editfield_class,
                         value           : safe_value
                     } );
@@ -111,7 +119,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     rows = parseInt( rows );
 
                     form += opt.template( opt.textarea_form, {
-                        id              : "jeip-edit-" + self.id,
+                        id              : _id( self, 'edit' ),
                         cols            : opt.cols,
                         rows            : rows,
                         editfield_class : opt.editfield_class,
@@ -120,7 +128,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 } // textarea form
                 else if( opt.form_type == 'select' ) {
                     form += opt.template( opt.start_select_form, {
-                        id              : "jeip-edit-" + self.id,
+                        id              : _id( self, 'edit' ),
                         editfield_class : opt.editfield_class
                     } );
 
@@ -135,7 +143,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         }
 
                         form += opt.template( opt.select_option_form, {
-                            id          : "jeip-edit-option-" + self.id + "-" + k,
+                            id          : _id( self, 'edit-option-' + k ),
                             option_value: k,
                             option_text : v,
                             selected    : selected
@@ -146,8 +154,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 } // select form
 
                 form += opt.template( opt.form_buttons, {
-                    save_id             : "jeip-save-" + self.id,
-                    cancel_id           : "jeip-cancel-" + self.id,
+                    save_id             : _id( self, 'save' ),
+                    cancel_id           : _id( self, 'cancel' ),
                     savebutton_class    : opt.savebutton_class,
                     savebutton_text     : opt.savebutton_text,
                     cancelbutton_class  : opt.cancelbutton_class,
@@ -161,21 +169,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 $self.after( $form );
 
-                $( "#jeip-editor-" + self.id ).fadeIn( "fast" );
+                $( '#' + _id( self, 'editor' ) ).fadeIn( "fast" );
 
                 if( opt.focus_edit ) {
-                    $( "#jeip-edit-" + self.id ).focus( );
+                    $( '#' + _id( self, 'edit' ) ).focus( );
                 }
 
                 if( opt.select_text ) {
-                    $( "#jeip-edit-" + self.id ).select( );
+                    $( '#' + _id( self, 'edit' ) ).select( );
                 }
 
-                $( "#jeip-cancel-" + self.id ).bind( "click", function() {
+                $( '#' + _id( self, 'cancel' ) ).bind( "click", function() {
                     _cancelEdit( self );
                 } );
 
-                $( "#jeip-edit-" + self.id ).keydown( function( e ) {
+                $( '#' + _id( self, 'edit' ) ).keydown( function( e ) {
                     // cancel
                     if( e.which == 27 ) {
                         _cancelEdit( self );
@@ -187,7 +195,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     }
                 } );
 
-                $( "#jeip-save-" + self.id ).bind( "click", function() {
+                $( '#' + _id( self, 'save' ) ).bind( "click", function() {
                     return _saveEdit( self, orig_option_value );
                 } ); // save click
 
@@ -203,7 +211,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         var _cancelEdit = function( self ) {
             var $self = $( self );
 
-            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+            $( '#' + _id( self, 'editor' ) ).fadeOut( "fast", function() {
                 $( this ).remove();
 
                 if( opt.mouseover_class ) {
@@ -219,9 +227,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         var _afterSaveEdit = function( self, response, textStatus, jqXHR ) {
             var $self = $( self );
             var is_error = opt.is_error( response );
-            var new_value = $( "#jeip-edit-" + self.id ).attr( "value" );
+            var new_value = $( '#' + _id( self, 'edit') ).attr( "value" );
 
-            $( "#jeip-editor-" + self.id ).fadeOut( "fast", function() {
+            $( '#' + _id( self, 'editor' ) ).fadeOut( "fast", function() {
                 $( this ).remove();
 
                 if( is_error ) {
@@ -231,7 +239,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     var html;
 
                     if( opt.form_type == "select" ) {
-                        html = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                        html = $( '#' + _id( self, 'edit-option-' + new_value ) ).html( );
                     }
                     else {
                         html = new_value;
@@ -255,7 +263,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $self.html( html );
                 }
 
-                $( "#jeip-saving-" + self.id ).fadeOut( "fast", function() {
+                $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
                     $( this ).remove();
 
                     if( opt.mouseover_class ) {
@@ -280,7 +288,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         var _saveEdit = function( self, orig_option_value ) {
             var $self = $( self );
             var orig_value = $self.html( );
-            var new_value = $( "#jeip-edit-" + self.id ).attr( "value" );
+            var new_value = $( _id( self, 'edit' ) ).attr( "value" );
 
             if( orig_value == new_value ) {
                 _cancelEdit( self );
@@ -288,12 +296,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
 
             var $saving = $( opt.template( opt.saving, {
-                id          : "jeip-saving-" + self.id,
+                id          : _id( self, 'saving' ),
                 saving_class: opt.saving_class,
                 saving_text : opt.saving_text
             } ));
 
-            $( "#jeip-editor-" + self.id )
+            $( '#' + _id( self, 'editor' ) )
                 .after( $saving.css('display', 'none') )
                 .fadeOut( "fast", function( ) {
                     $saving.fadeIn( "fast" );
@@ -314,7 +322,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             if( opt.form_type == "select" ) {
                 context_data.orig_option_value = orig_option_value;
                 context_data.orig_option_text = orig_value;
-                context_data.new_option_text = $( "#jeip-edit-option-" + self.id + "-" + new_value ).html( );
+                context_data.new_option_text = $( '#' + _id( self, 'edit-option-' + new_value ) ).html( );
             }
 
             if ( $.isFunction( opt.prepare_data ) ) {
@@ -345,6 +353,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
         }; // _saveEdit
 
+
         this.each( function( ) {
             var $this = $( this );
 
@@ -353,6 +362,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $( this ).toggleClass( opt.mouseover_class );
                 } );
             }
+
+            $this.attr( 'data-jeip-id', eip_counter++ );
 
             _attach( this );
         } ); // this.each

@@ -65,6 +65,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             });
         }
 
+        var _show = function( self ) {
+            var $edit = $( '#' + _id( self, 'edit' ) );
+            var $editor = $( '#' + _id( self, 'editor' ) );
+
+            if( opt.focus_edit ) {
+                $edit.focus( );
+            }
+
+            if( opt.select_text ) {
+                $edit.select( );
+            }
+
+            if( typeof opt.on_show === 'function' ) {
+                $editor.each( function() {
+                    opt.on_show.call( this );
+                } );
+            }
+        }
+
         var _editMode = function( self ) {
             var $self = $( self );
 
@@ -74,7 +93,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $self.fadeOut( "fast", function() {
                 var value = $self.hasClass( opt.empty_class ) ? '' : $self.html( );
 
-                if( $.isFunction( opt.prepare_value ) ) {
+                if( typeof opt.prepare_value === 'function' ) {
                     value = opt.prepare_value( value );
                 }
 
@@ -170,39 +189,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 $( '#' + _id( self, 'editor' ) ).fadeIn( "fast" );
 
-                if( opt.focus_edit ) {
-                    $( '#' + _id( self, 'edit' ) ).focus( );
+                var $edit = $( '#' + _id( self, 'edit' ) );
+
+                if( opt.cancel_on_blur ) {
+                    $edit.blur( function() {
+                        // TODO cancel edit but only if no request is being sent
+                        _cancelEdit( self );
+                    } );
                 }
 
-                if( opt.select_text ) {
-                    $( '#' + _id( self, 'edit' ) ).select( );
-                }
+                $edit.keydown( function( e ) {
+                    // cancel
+                    if( e.which == 27 && opt.cancel_on_esc ) {
+                        _cancelEdit( self );
+                        return false;
+                    }
+
+                    // save
+                    if( e.which == 13 && opt.form_type != "textarea" ) {
+                        _saveEdit( self, orig_option_value );
+                        return false;
+                    }
+                } );
 
                 $( '#' + _id( self, 'cancel' ) ).bind( "click", function() {
                     _cancelEdit( self );
                 } );
 
-                $( '#' + _id( self, 'edit' ) ).keydown( function( e ) {
-                    // cancel
-                    if( e.which == 27 ) {
-                        _cancelEdit( self );
-                    }
-
-                    // save
-                    if( opt.form_type != "textarea" && e.which == 13 ) {
-                        _saveEdit( self, orig_option_value );
-                    }
-                } );
-
                 $( '#' + _id( self, 'save' ) ).bind( "click", function() {
                     return _saveEdit( self, orig_option_value );
-                } ); // save click
+                } );
 
-                if( $.isFunction( opt.on_render ) ) {
-                    $form.each( function() {
-                        opt.on_render.call( this );
-                    } );
-                }
+                _show( self );
 
             } ); // this fadeOut
         } // function _editMode
@@ -211,6 +229,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             var $self = $( self );
 
             $( '#' + _id( self, 'editor' ) ).fadeOut( "fast", function() {
+                if( typeof opt.on_hide === 'function' ) {
+                    opt.on_hide.call( this );
+                }
+
                 $( this ).remove();
 
                 if( opt.mouseover_class ) {
@@ -228,13 +250,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             var is_error = opt.is_error( response );
             var new_value = $( '#' + _id( self, 'edit') ).attr( "value" );
 
-            $( '#' + _id( self, 'editor' ) ).fadeOut( "fast", function() {
+            var $editor = $( '#' + _id( self, 'editor' ) );
+
+            if( is_error ) {
+                $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
+                    $( this ).remove();
+
+                    $editor.fadeIn( "fast", function() {
+                        _show( this );                        
+
+                        if( typeof opt.on_error === 'function' ) {
+                            // run on_error in context of editor element
+                            opt.on_error.call( $editor.get(0), response, textStatus, jqXHR );
+                        }
+                    } );
+                } );
+                return;
+            }
+
+            $editor.fadeOut( "fast", function() {
+                if( typeof opt.on_hide === 'function' ) {
+                    opt.on_hide.call( this );
+                }
+
                 $( this ).remove();
 
-                if( is_error ) {
-                    opt.on_error( response, textStatus, jqXHR );
-                }
-                else {
+                $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
+                    $( this ).remove();
+
                     var html;
 
                     if( opt.form_type == "select" ) {
@@ -247,7 +290,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     // Modify or escape new value before inserting it into the element.
                     // Since result of this function may depend on server response it is
                     // passed as a second parameter.
-                    if( $.isFunction( opt.process_value ) ) {
+                    if( typeof opt.process_value === 'function' ) {
                         html = opt.process_value( html, response );
                     }
 
@@ -260,10 +303,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     }
 
                     $self.html( html );
-                }
-
-                $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
-                    $( this ).remove();
 
                     if( opt.mouseover_class ) {
                         $self.addClass( opt.mouseover_class );
@@ -271,8 +310,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                     $self.fadeIn( "fast" );
 
-                    if( !is_error && $.isFunction( opt.after_save ) ) {
-                        opt.after_save( self );
+                    if( !is_error && typeof opt.after_save === 'function' ) {
+                        opt.after_save.call( self, self );
                     }
 
                     if( opt.mouseover_class ) {
@@ -287,7 +326,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         var _saveEdit = function( self, orig_option_value ) {
             var $self = $( self );
             var orig_value = $self.html( );
-            var new_value = $( _id( self, 'edit' ) ).attr( "value" );
+            var new_value = $( '#' + _id( self, 'edit' ) ).attr( "value" );
 
             if( orig_value == new_value ) {
                 _cancelEdit( self );
@@ -311,7 +350,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             var context_data = {
                 url         : location.href,
-                id          : self.id,
+                name        : opt.name,
                 form_type   : opt.form_type,
                 orig_value  : orig_value,
                 new_value   : new_value,
@@ -375,6 +414,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         save_on_enter       : true,
         cancel_on_esc       : true,
+        cancel_on_blur      : false,
         focus_edit          : true,
         select_text         : false,
         edit_event          : "click",
@@ -428,9 +468,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             alert( 'Error: ' + response.error );
         },
         is_error            : function( response ) {
-            return !!response.error;
+            return response && response.error;
         },
-        on_render           : null,
+        on_show             : null,
+        on_hide             : null,
         prepare_data        : null,
         prepare_value       : null,
         process_value       : null,

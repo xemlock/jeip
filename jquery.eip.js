@@ -460,11 +460,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         select_option_form  : '<option id="#{id}" value="#{option_value}" #{selected}>#{option_text}</option>',
         stop_select_form    : '</select>',
 
-        after_save          : function( element ) {
-            var $element = $( element );
+        after_save          : function() {
+            var $this = $( this );
             for( var i = 0; i < 2; ++i ) {
-                $element.fadeOut( "fast" );
-                $element.fadeIn( "fast" );
+                $this.fadeOut( "fast" );
+                $this.fadeIn( "fast" );
             }
         },
         is_error            : function( response ) {

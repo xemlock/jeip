@@ -4,7 +4,7 @@ Change Log
 0.2.0 - 19 Dec 2012
 	- new settings: method, hint_text, or_text, prepare_data, template,
 	  empty_text, empty_class, name, process_value, prepare_value,
-	  on_response, on_show, on_hide
+	  is_error, on_show, on_hide
 	- fixed asynchronicity issues with remove() after fadeOut()
 	- elements ids prefixed with jeip-
 	- optimizations: decreased number of calls to jQuery on the same

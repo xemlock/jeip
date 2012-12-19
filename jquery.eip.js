@@ -245,24 +245,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _attach( self );
         };
 
+        var _error = function( self, response, jqXHR ) {
+            var $editor = $( '#' + _id( self, 'editor' ) );
+
+            $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
+                $( this ).remove();
+
+                $editor.fadeIn( "fast", function() {
+                    _show( this );                        
+
+                    if( typeof opt.on_error === 'function' ) {
+                        opt.on_error.call( $editor.get(0), response, jqXHR );
+                    }
+                } );
+            } );
+        }
+
         var _afterSaveEdit = function( self, response, jqXHR ) {
             var $self = $( self );
             var $editor = $( '#' + _id( self, 'editor' ) );
 
             // jqXHR requires jQuery 1.4+
-            if( false === opt.on_response.call( self, response, jqXHR ) ) {
-                $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
-                    $( this ).remove();
-
-                    $editor.fadeIn( "fast", function() {
-                        _show( this );                        
-
-                        if( typeof opt.on_error === 'function' ) {
-                            opt.on_error.call( self, response, jqXHR );
-                        }
-                    } );
-                } );
-                return;
+            if ( opt.is_error( response, jqXHR ) ) {
+                return _error( self, response, jqXHR );
             }
 
             var new_value = $( '#' + _id( self, 'edit') ).attr( "value" );
@@ -310,7 +315,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $self.fadeIn( "fast" );
 
                     if( typeof opt.after_save === 'function' ) {
-                        opt.after_save.call( self, self );
+                        opt.after_save.call( self, response, jqXHR );
                     }
 
                     if( opt.mouseover_class ) {
@@ -380,13 +385,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         _afterSaveEdit( self, response, jqXHR );
                     },
                     error   : function( jqXHR, textStatus, errorThrown ) {
-                        errorThrown = errorThrown || 'Unknown error';
-                        _afterSaveEdit( self, { error : errorThrown }, jqXHR );
+                        _afterSaveEdit( self, null, jqXHR );
                     }
                 } ); // ajax
             }
             else {
-                _afterSaveEdit( self, true );
+                _afterSaveEdit( self, null, null );
             }
         }; // _saveEdit
 
@@ -463,10 +467,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $element.fadeIn( "fast" );
             }
         },
-        on_response         : function( response, xhr ) {
-            if( response && response.error ) {
-                return false; // false indicates an error
-            }
+        is_error            : function( response ) {
+            return response && response.error;
         },
         on_error            : function( response ) {
             alert( 'Error: ' + response.error );

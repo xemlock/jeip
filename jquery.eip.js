@@ -193,7 +193,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 if( opt.cancel_on_blur ) {
                     $edit.blur( function() {
-                        // TODO cancel edit but only if no request is being sent
+                        // TODO cancel edit but only if there was focus on text field
                         _cancelEdit( self );
                     } );
                 }
@@ -245,14 +245,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _attach( self );
         };
 
-        var _afterSaveEdit = function( self, response, textStatus, jqXHR ) {
+        var _afterSaveEdit = function( self, response, jqXHR ) {
             var $self = $( self );
-            var is_error = opt.is_error( response );
-            var new_value = $( '#' + _id( self, 'edit') ).attr( "value" );
-
             var $editor = $( '#' + _id( self, 'editor' ) );
 
-            if( is_error ) {
+            // jqXHR requires jQuery 1.4+
+            if( false === opt.on_response.call( self, response, jqXHR ) ) {
                 $( '#' + _id( self, 'saving' ) ).fadeOut( "fast", function() {
                     $( this ).remove();
 
@@ -260,13 +258,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         _show( this );                        
 
                         if( typeof opt.on_error === 'function' ) {
-                            // run on_error in context of editor element
-                            opt.on_error.call( $editor.get(0), response, textStatus, jqXHR );
+                            opt.on_error.call( self, response, jqXHR );
                         }
                     } );
                 } );
                 return;
             }
+
+            var new_value = $( '#' + _id( self, 'edit') ).attr( "value" );
 
             $editor.fadeOut( "fast", function() {
                 if( typeof opt.on_hide === 'function' ) {
@@ -310,7 +309,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                     $self.fadeIn( "fast" );
 
-                    if( !is_error && typeof opt.after_save === 'function' ) {
+                    if( typeof opt.after_save === 'function' ) {
                         opt.after_save.call( self, self );
                     }
 
@@ -378,11 +377,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     dataType: "json",
                     data    : request_data,
                     success : function( response, textStatus, jqXHR ) {
-                        _afterSaveEdit( self, response, textStatus, jqXHR );
+                        _afterSaveEdit( self, response, jqXHR );
                     },
                     error   : function( jqXHR, textStatus, errorThrown ) {
                         errorThrown = errorThrown || 'Unknown error';
-                        _afterSaveEdit( self, { error : errorThrown }, textStatus, jqXHR );
+                        _afterSaveEdit( self, { error : errorThrown }, jqXHR );
                     }
                 } ); // ajax
             }
@@ -464,11 +463,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $element.fadeIn( "fast" );
             }
         },
+        on_response         : function( response, xhr ) {
+            if( response && response.error ) {
+                return false; // false indicates an error
+            }
+        },
         on_error            : function( response ) {
             alert( 'Error: ' + response.error );
-        },
-        is_error            : function( response ) {
-            return response && response.error;
         },
         on_show             : null,
         on_hide             : null,

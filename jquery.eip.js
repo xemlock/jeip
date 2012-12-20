@@ -97,6 +97,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     value = opt.prepare_value( value );
                 }
 
+                self._eipInitialValue = value;
+
                 var safe_value = value;
 
                 safe_value = safe_value.replace( /</g, "&lt;" )
@@ -329,10 +331,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         var _saveEdit = function( self, orig_option_value ) {
             var $self = $( self );
-            var orig_value = $self.html( );
-            var new_value = $( '#' + _id( self, 'edit' ) ).attr( "value" );
+            var new_value = $( '#' + _id( self, 'edit' ) ).val();
 
-            if( orig_value == new_value ) {
+            if( self._eipInitialValue == new_value ) {
                 _cancelEdit( self );
                 return true;
             }
@@ -356,14 +357,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 url         : location.href,
                 name        : opt.name,
                 form_type   : opt.form_type,
-                orig_value  : orig_value,
+                orig_value  : self._eipInitialValue,
                 new_value   : new_value,
                 data        : opt.data
             }
 
             if( opt.form_type == "select" ) {
                 context_data.orig_option_value = orig_option_value;
-                context_data.orig_option_text = orig_value;
+                context_data.orig_option_text = context_data.orig_value;
                 context_data.new_option_text = $( '#' + _id( self, 'edit-option-' + new_value ) ).html( );
             }
 

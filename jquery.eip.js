@@ -381,11 +381,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     type    : opt.method,
                     dataType: "json",
                     data    : request_data,
-                    success : function( response, textStatus, jqXHR ) {
-                        _afterSaveEdit( self, response, jqXHR );
+                    success : function( data, textStatus, jqXHR ) {
+                        _afterSaveEdit( self, data, jqXHR );
                     },
                     error   : function( jqXHR, textStatus, errorThrown ) {
-                        _afterSaveEdit( self, null, jqXHR );
+                        var data = null;
+                        try {
+                            data = $.parseJSON(jqXHR.responseText);
+                        } catch (e) {
+                        }
+                        _afterSaveEdit( self, data, jqXHR );
                     }
                 } ); // ajax
             }
